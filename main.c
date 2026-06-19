@@ -231,9 +231,6 @@ static void write_in_number()
 
 int main() 
 {
-
-
-	
 	set_state_to_starting();
 
 	srand(time(NULL));
@@ -259,24 +256,10 @@ int main()
 		}
 	}
 
-
-	time_t seconds;
-
 	printf("\n\n Unsolved Puzzle\n");
 	print_game_state();
 
 	while(is_unsolved){
-
-		seconds = time(NULL);
-
-		if (seconds % 2 == 0) {
-			if (cooldown == 0) {
-				print_game_state();
-				cooldown = 10000;
-			} 
-			cooldown--;
-		}
-
 		update_tile_entropy();
 		write_in_number();
 	}
