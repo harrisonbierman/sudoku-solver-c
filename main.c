@@ -2,13 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct Coords {
-	int y;
-	int x;
-}Coords;
-
-static size_t cooldown = 0;
-
 static int tile_entropy[9][9][9];
 static int tile_entropy_count[9][9];
 static int is_unsolved = 1;
@@ -57,15 +50,6 @@ static int starting_state [9][9] =  {
 						 { 2, 0, 0,  0, 7, 0,  0, 6, 0 }
 						};
 
-static void collaps_tile(int collaps_to, int y, int x) 
-{
-	for (int i = 0; i < 9; i++) {
-		if (tile_entropy[y][x][i] != collaps_to) {
-			tile_entropy[y][x][i] = 0;
-		}
-	}
-}
-
 static void remove_entropy(int to_remove, int y, int x)
 {
 	for (int i = 0; i < 9; i++) {
@@ -77,35 +61,17 @@ static void remove_entropy(int to_remove, int y, int x)
 
 }
 
+
+
+/* 
+ * This function will first look at the game state and 
+ * for every tile that has been written into, it will 
+ * collapse its entropy. Then it will go over every empty
+ * tile and reduce its entropy base on the tiles in the 
+ * row, column, and box that it belongs to.
+ */
 static void update_tile_entropy() 
 {
-	// reset entropy for all tiles back to max and 
-	// then this reductive function will get to back to where it should be
-	// not the most elegant solution but it should work for now
-	for (int y = 0; y < 9; y++) {
-		for (int x = 0; x < 9; x++) {
-			for (int z = 0; z < 9; z++) {
-				tile_entropy[y][x][z] = z + 1;
-			}
-		}
-	}
-
-	// reset the count back to 9
-	for (int y = 0; y < 9; y++) {
-		for (int x = 0; x < 9; x++) {
-			tile_entropy_count[y][x] = 9;
-		}
-	}
-
-	// check for collapsed tiles
-	for (int y = 0; y < 9; y++) {
-		for (int x = 0; x < 9; x++) {
-			if (game_state[y][x] != 0) {
-				collaps_tile(game_state[y][x], y, x);
-			}
-		}
-	}
-
 	// for each tile
 	for (int y = 0; y < 9; y++) {
 		for (int x = 0; x < 9; x++) {
@@ -113,21 +79,21 @@ static void update_tile_entropy()
 			// if tile is empty
 			if (game_state[y][x] == 0) {
 				
-				// update by row
+				// compare by row
 				for (int i = 0; i < 9; i++) {
 					if (game_state[y][i] != 0) {
 						remove_entropy(game_state[y][i], y, x);
 					}
 				}
 
-				// update by column
+				// compare by column
 				for (int i = 0; i < 9; i++) {
 					if (game_state[i][x] != 0) {
 						remove_entropy(game_state[i][x], y, x);
 					}
 				}
 
-				// update by box
+				// compare by box
 				// I found this neat trick to snap up or down by 3 tiles
 				// so the respective tile only compares with the box it is
 				// associated with
@@ -146,9 +112,8 @@ static void update_tile_entropy()
 
 static void print_game_state() 
 {
-	printf("\n=====================\n");
+	printf("\n===================");
 	for (int y = 0; y < 9; y++) {
-		printf("\n");
 		if (y % 3 == 0) {
 			printf("\n");
 		}
@@ -160,8 +125,9 @@ static void print_game_state()
 				printf(" ");
 			}
 		}
+		printf("\n");
 	}
-	printf("\n=====================\n");
+	printf("===================\n");
 }
 
 static void set_state_to_starting() 
@@ -173,7 +139,19 @@ static void set_state_to_starting()
 	}
 }
 
-static void write_in_number()
+static void set_board_entropy_to_max()
+{
+	for (int y = 0; y < 9; y++) {
+		for (int x = 0; x < 9; x++) {
+				tile_entropy_count[y][x] = 9;
+			for (int z = 0; z < 9; z++) {
+				tile_entropy[y][x][z] = z + 1;
+			}
+		}
+	}
+}
+
+static void write_in_tile()
 {
 	// find the tile with the lowest entropy
 	is_unsolved = 0;
@@ -191,6 +169,7 @@ static void write_in_number()
 				curr_low_y = y;
 				curr_low_x = x;
 				 
+				// if there are no tiles that are zero, unsolved would be false;
 				is_unsolved++;
 			}
 		}
@@ -218,6 +197,7 @@ static void write_in_number()
 		// want to make a whole history backtracking system right now.
 		if (count == 0) {
 			set_state_to_starting();
+			set_board_entropy_to_max();
 			attempts++;
 			return;
 		}
@@ -226,45 +206,33 @@ static void write_in_number()
 		// store new number in game state
 		game_state[curr_low_y][curr_low_x] = chosen_number;
 
-	} else {
-		printf("\nPuzzle Solved\n");
-		print_game_state();
-		printf("\nSolve Attemps: %d", attempts);
-	}
+	} 
+
 }
 
 int main() 
 {
 	set_state_to_starting();
+	set_board_entropy_to_max();
 
+	// initiates for rand function
 	srand(time(NULL));
 
 	/*
 	 * all tiles start with their 
 	 * entropy being all 1-9 states
+	 * tiles possible states [1, 2, 3, 4, 5, 6, 7, 8, 9]
 	 */
-	for (int y = 0; y < 9; y++) {
-		for (int x = 0; x < 9; x++) {
-			for (int z = 0; z < 9; z++) {
-				tile_entropy[y][x][z] = z + 1;
-			}
-		}
-	}
 
-	// the count of possible states all start at 9
-	// keeps track as quick reference for picking
-	// the tile with the lowest entropy 
-	for (int y = 0; y < 9; y++) {
-		for (int x = 0; x < 9; x++) {
-			tile_entropy_count[y][x] = 9;
-		}
-	}
-
-	printf("\n\n Unsolved Puzzle\n");
+	printf("\n  Unsolved Puzzle");
 	print_game_state();
 
 	while(is_unsolved){
 		update_tile_entropy();
-		write_in_number();
+		write_in_tile();
 	}
+
+	printf("\n   Solved Puzzle");
+	print_game_state();
+	printf("\n Solve Attemps: %d", attempts);
 }
