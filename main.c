@@ -13,6 +13,8 @@ static int tile_entropy[9][9][9];
 static int tile_entropy_count[9][9];
 static int is_unsolved = 1;
 
+static int attempts = 0;
+
 static int game_state [9][9] =  {
 						 { 0, 0, 0,  0, 0, 0,  0, 0, 0 },
 						 { 0, 0, 0,  0, 0, 0,  0, 0, 0 },
@@ -216,6 +218,7 @@ static void write_in_number()
 		// want to make a whole history backtracking system right now.
 		if (count == 0) {
 			set_state_to_starting();
+			attempts++;
 			return;
 		}
 
@@ -226,6 +229,7 @@ static void write_in_number()
 	} else {
 		printf("\nPuzzle Solved\n");
 		print_game_state();
+		printf("\nSolve Attemps: %d", attempts);
 	}
 }
 
